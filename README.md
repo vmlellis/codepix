@@ -11,3 +11,8 @@ protoc --go_out=application/grpc/pb --go_opt=paths=source_relative --go-grpc_out
 ``` bash
 evans -r repl
 ```
+
+### Cobra command (init)
+``` bash
+cobra init --pkg-name codepix
+```
