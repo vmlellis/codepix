@@ -4,9 +4,8 @@ import (
 	"errors"
 	"time"
 
-	uuid "github.com/satori/go.uuid"
-
 	"github.com/asaskevich/govalidator"
+	uuid "github.com/satori/go.uuid"
 )
 
 type PixKey struct {

@@ -60,7 +60,10 @@ func ConnectDB(env string) *gorm.DB {
 	}
 
 	if os.Getenv("AutoMigrateDb") == "true" {
+		currentLogger := db.Config.Logger
+		db.Config.Logger = logger.Default.LogMode(logger.Error)
 		db.AutoMigrate(&model.Bank{}, &model.Account{}, &model.PixKey{}, &model.Transaction{})
+		db.Config.Logger = currentLogger
 	}
 
 	return db

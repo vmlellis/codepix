@@ -19,38 +19,48 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/vmlellis/imersao/codepix-go/application/grpc"
+	"github.com/vmlellis/imersao/codepix-go/application/kafka"
 	"github.com/vmlellis/imersao/codepix-go/infrastructure/db"
 	"gorm.io/gorm"
+
+	ckafka "github.com/confluentinc/confluent-kafka-go/kafka"
 )
 
-var gRPCPortNumber int
-
-// grpcCmd represents the grpc command
-var grpcCmd = &cobra.Command{
-	Use:   "grpc",
-	Short: "Start gRPC server",
+// kafkaCmd represents the kafka command
+var kafkaCmd = &cobra.Command{
+	Use:   "kafka",
+	Short: "Start consuming transactions with Apache Kafka",
 	Run: func(cmd *cobra.Command, args []string) {
 		database := db.ConnectDB(os.Getenv("env"))
-		runGrpc(database)
+		runKafka(database)
 	},
 }
 
-func runGrpc(database *gorm.DB) {
-	grpc.StartGrpcServer(database, gRPCPortNumber)
+func runKafka(database *gorm.DB) {
+	deliveryChan := make(chan ckafka.Event)
+	kafkaProducer, err := kafka.NewKafkaProducer(deliveryChan)
+	if err != nil {
+		panic(err)
+	}
+
+	go kafkaProducer.DeliveryReport()
+
+	// kafkaProducer.Publish("Ola Consumer", "teste")
+
+	kafkaProcessor := kafka.NewKafkaProcessor(database, kafkaProducer)
+	kafkaProcessor.Consume()
 }
 
 func init() {
-	rootCmd.AddCommand(grpcCmd)
-	grpcCmd.Flags().IntVarP(&gRPCPortNumber, "port", "p", 50051, "gRPC Server Port")
+	rootCmd.AddCommand(kafkaCmd)
 
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// grpcCmd.PersistentFlags().String("foo", "", "A help for foo")
+	// kafkaCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// grpcCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// kafkaCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
