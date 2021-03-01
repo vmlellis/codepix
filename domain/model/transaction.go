@@ -21,7 +21,7 @@ type Transactions struct {
 
 type Transaction struct {
 	Base              `valid:"required"`
-	AccountFrom       *Account `valid:"-" gorm:"-"`
+	AccountFrom       *Account `valid:"-" gorm:"foreignkey:AccountFromID"`
 	AccountFromID     string   `gorm:"column:account_from_id;type:uuid;" valid:"notnull"`
 	Amount            float64  `json:"amount" gorm:"type:float" valid:"notnull"`
 	PixKeyTo          *PixKey  `valid:"-" gorm:"-"`

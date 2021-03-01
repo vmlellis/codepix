@@ -68,9 +68,13 @@ func (k *KafkaProcessor) processMessage(msg *ckafka.Message) {
 }
 
 func (k *KafkaProcessor) processTransaction(msg *ckafka.Message) error {
+	fmt.Println("===> processTransaction")
+	fmt.Println(string(msg.Value))
+
 	transaction := appModel.NewTransaction()
 	err := transaction.ParseJson(msg.Value)
 	if err != nil {
+		fmt.Println("error parse transaction", err)
 		return err
 	}
 
@@ -105,20 +109,26 @@ func (k *KafkaProcessor) processTransaction(msg *ckafka.Message) error {
 }
 
 func (k *KafkaProcessor) processTransactionConfirmation(msg *ckafka.Message) error {
+	fmt.Println("===> processTransactionConfirmation")
+	fmt.Println(string(msg.Value))
+
 	transaction := appModel.NewTransaction()
 	err := transaction.ParseJson(msg.Value)
 	if err != nil {
+		fmt.Println("error parse transaction confirmation", err)
 		return err
 	}
 
 	transactionUseCase := factory.TransactionUseCaseFactory(k.Database)
 
 	if transaction.Status == model.TransactionConfirmed {
+		fmt.Println("===> confirm transaction")
 		err = k.confirmTransaction(transaction, transactionUseCase)
 		if err != nil {
 			return err
 		}
 	} else if transaction.Status == model.TransactionCompleted {
+		fmt.Println("===> complete transaction")
 		_, err := transactionUseCase.Complete(transaction.ID)
 		if err != nil {
 			return err
@@ -132,17 +142,21 @@ func (k *KafkaProcessor) processTransactionConfirmation(msg *ckafka.Message) err
 func (k *KafkaProcessor) confirmTransaction(transaction *appModel.Transaction, transactionUseCase usecase.TransactionUseCase) error {
 	confirmedTransaction, err := transactionUseCase.Confirm(transaction.ID)
 	if err != nil {
+		fmt.Println("error to confirm transaction", err)
 		return err
 	}
 
 	topic := "bank" + confirmedTransaction.AccountFrom.Bank.Code
 	transactionJson, err := transaction.ToJson()
 	if err != nil {
+		fmt.Println("error transaction to json", err)
 		return err
 	}
 
+	fmt.Println("publishing:", string(transactionJson))
 	err = k.KafkaProducer.Publish(string(transactionJson), topic)
 	if err != nil {
+		fmt.Println("error publish in kafka", err)
 		return err
 	}
 
